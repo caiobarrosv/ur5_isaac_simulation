@@ -1,0 +1,3 @@
+ur5_isaac_ros2:
+  ros__parameters:
+    home_joint_array: [0.0, -1.57, 0.0, -1.57, 0.0, 0.0]
