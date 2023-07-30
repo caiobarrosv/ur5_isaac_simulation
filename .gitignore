@@ -1,1 +1,4 @@
 *_pycache_*
+*.npy
+*.pcd
+*.thumbs

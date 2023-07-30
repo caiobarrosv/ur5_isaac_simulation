@@ -1,0 +1,52 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "env": {
+                "EXP_PATH": "${userHome}/.local/share/ov/pkg/isaac_sim-2022.2.1/apps", 
+                "RESOURCE_NAME": "IsaacSim"
+            },
+            "python": "${userHome}/.local/share/ov/pkg/isaac_sim-2022.2.1/kit/python/bin/python3",
+            "envFile": "${userHome}/.local/share/ov/pkg/isaac_sim-2022.2.1/.vscode/.standalone_examples.env",
+            "preLaunchTask": "setup_python_env",
+            "args": ["--/persistent/isaac/asset_root/default=\"omniverse://my_server\""],
+            "justMyCode": false
+        },
+        {
+            "name": "Python: Attach (windows-x86_64/linux-x86_64)",
+            "type": "python",
+            "request": "attach",
+            "port": 3000,
+            "host": "localhost"
+        },
+        {
+            "name": "(Linux) isaac-sim",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${userHome}/.local/share/ov/pkg/isaac_sim-2022.2.1/kit/kit",
+            "args": ["${userHome}/.local/share/ov/pkg/isaac_sim-2022.2.1/apps/omni.isaac.sim.kit",
+                "--ext-folder", "${userHome}/.local/share/ov/pkg/isaac_sim-2022.2.1/exts",
+                "--ext-folder", "${userHome}/.local/share/ov/pkg/isaac_sim-2022.2.1/apps"],
+            "stopAtEntry": false,
+            "cwd": "${userHome}/.local/share/ov/pkg/isaac_sim-2022.2.1",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ]
+}
