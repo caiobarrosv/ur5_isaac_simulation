@@ -35,6 +35,11 @@ class UR5Isaac(Node):
         "wrist_3_joint"
     ]
 
+    gripper_joint_names = [
+        "right_outer_knuckle_joint",
+        "left_outer_knuckle_joint"
+    ]
+
     def __init__(self):
         """Initialize the UR5 Isaac Sim simulation"""
 
@@ -48,11 +53,19 @@ class UR5Isaac(Node):
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
         ###############################
-        # ACTION SERVER
+        # UR5 ACTION SERVER
         ###############################
         self._action_client = ActionClient(self,
                                            FollowJointTrajectory,
                                            'ur5/follow_joint_trajectory')
+
+        ###############################
+        # GRIPPER ACTION SERVER
+        ###############################
+        self._gripper_action_client =\
+            ActionClient(self,
+                         FollowJointTrajectory,
+                         'ur5_gripper/follow_joint_trajectory')
 
         ###############################
         # ROS PARAMETERS
@@ -80,10 +93,11 @@ class UR5Isaac(Node):
         ###############################
         # TKINTER GUI
         ###############################
-        self.tkinter = TkinterGui(self.send_goal)
+        self.tkinter = TkinterGui(self.send_goal, self.send_goal_gripper)
 
         self.inv_kin = False
         self.debug_inv_kin = False
+        self.goal_prim = ''
 
         self.root = self.tkinter.build_frames()
         timer_period = 1/60
@@ -117,15 +131,16 @@ class UR5Isaac(Node):
             kinematics.
 
         """
+        self.goal_prim = 'UR5'
         if movement == 'slow':
             time_in_sec = self.ros_parameters['trajectory_time_slow']
         elif movement == 'fast':
             time_in_sec = self.ros_parameters['trajectory_time_fast']
 
         if inv_kin:
-            self.get_logger().info(f"Target position [x, y, z]: {target[:3]}")
+            self.get_logger().info(f"[UR5] Target position [x, y, z]: {target[:3]}")
             self.get_logger().info(
-                f"Target orientation [roll, pitch, yaw]: {target[3:]}")
+                f"[UR5] Target orientation [roll, pitch, yaw]: {target[3:]}")
             desired_pose =\
                 transformations.get_desired_pose_htm(
                     position=np.array(target[:3]),
@@ -154,13 +169,46 @@ class UR5Isaac(Node):
                     feedback_callback=self.feedback_callback)
             send_goal_future.add_done_callback(self.goal_response_callback)
             self.get_logger().info(
-                f"Joint goal [{target}] sent to the UR5 robot.")
+                f"[{self.goal_prim}] Joint goal [{target}] sent to the UR5 robot.")
             self.inv_kin = inv_kin
             self.debug_inv_kin = debug_inv_kin
         else:
             self.get_logger().error(
                 "Please, specify the time in seconds or"
                 "the type of movement (slow or fast)")
+
+    def send_goal_gripper(
+        self,
+        position: list
+    ):
+        """Send trajectory to the UR5 gripper in Isaac Sim.
+
+        Parameters
+        ----------
+        time_in_sec : float
+            Time in seconds to complete the action.
+        position : list
+            List of joint positions.
+
+        """
+        self.goal_prim = 'GRIPPER'
+        goal = FollowJointTrajectory.Goal()
+        goal.trajectory.joint_names = self.gripper_joint_names
+        duration = Duration(sec=3)
+        n_joints = len(self.gripper_joint_names)
+        goal.trajectory.points.append(
+            JointTrajectoryPoint(positions=position,
+                                 velocities=[0.0]*n_joints,
+                                 accelerations=[0.0]*n_joints,
+                                 time_from_start=duration))
+        self._gripper_action_client.wait_for_server(timeout_sec=10.0)
+        send_goal_future =\
+            self._gripper_action_client.send_goal_async(
+                goal,
+                feedback_callback=self.feedback_callback)
+        send_goal_future.add_done_callback(self.goal_response_callback)
+        self.get_logger().info(
+            f"[{self.goal_prim}] Joint goal [{position}] sent to the UR5 robot.")
 
     def goal_response_callback(self, future):
         """Receives the response from the action server.
@@ -189,7 +237,7 @@ class UR5Isaac(Node):
 
         """
         result = future.result().result
-        self.get_logger().info(f'Result: {result.error_string}')
+        self.get_logger().info(f'[Feedback] [{self.goal_prim}] Result: {result.error_string}')
         self.debug_htm_wrist_3()
 
     def debug_htm_wrist_3(self):
@@ -225,10 +273,10 @@ class UR5Isaac(Node):
         des_positions = np.round(feedback.desired.positions, 5)
         actual_positions = np.round(feedback.actual.positions, 5)
         error_positions = np.round(feedback.error.positions, 5)
-        info(f'[Feedback] Desired position: {des_positions}')
-        info(f'[Feedback] Reached position: {actual_positions}')
-        info(f'[Feedback] Error position by joint: {error_positions}')
-        info("[Feedback] Absolute error (radians): "
+        info(f'[Feedback] [{self.goal_prim}] Desired position: {des_positions}')
+        info(f'[Feedback] [{self.goal_prim}] Reached position: {actual_positions}')
+        info(f'[Feedback] [{self.goal_prim}] Error position by joint: {error_positions}')
+        info(f"[Feedback] [{self.goal_prim}] Absolute error (radians): "
              f"{abs(sum(feedback.error.positions))}")
 
     def get_transform_between_frames(

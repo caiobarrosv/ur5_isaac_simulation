@@ -1,18 +1,55 @@
 """Tkinter GUI class for the UR5 Isaac Simulation."""
+import os
 import tkinter as tk
+from tkinter import messagebox
+
 import numpy as np
+from ament_index_python.packages import get_package_share_directory
+
+from ur5_isaac_simulation.helper_functions.load_ros_parameters import \
+    load_yaml_file
+
+
+def is_valid_number(input_str: str):
+    """Check if the input is a valid number.
+
+    Parameters
+    ----------
+    input_str : str
+        The input string.
+
+    Returns
+    -------
+    bool
+        True if the input is a valid number, False otherwise.
+
+    """
+    try:
+        float(input_str)
+        return True
+    except ValueError:
+        return False
 
 
 class TkinterGui():
     """Tkinter GUI class for the UR5 Isaac Simulation."""
 
-    def __init__(self, send_goal):
+    def __init__(self, send_goal, send_goal_gripper):
         self.root = tk.Tk()
         self.root.title("UR5 Isaac Simulation")
         self.root.geometry("300x450+1600+600")
         self.root.resizable(False, False)
 
+        # Get the parameters from the yaml file
+        config_file = os.path.join(
+            get_package_share_directory("ur5_isaac_simulation"),
+            'config',
+            'params.yaml'
+        )
+        self.config = load_yaml_file(config_file)['tkinter_gui']
+
         self.send_goal = send_goal
+        self.send_goal_gripper = send_goal_gripper
         self.list_of_values = []
         self.joint_values_home = [0, -1.57, 0, -1.57, 0, 0]
 
@@ -48,13 +85,26 @@ class TkinterGui():
             The inverse kinematics frame in the Tkinter GUI.
 
         """
-        desired_pose = [0.5, 0.0, 0.5, 0, 90, 0]
+        gripper_closed_position = self.config['gripper_closed_position']
+        gripper_open_position = self.config['gripper_open_position']
         main_frame_buttons = [
             ["FRONT",
              lambda: [
-                 self.send_goal(desired_pose,
+                 self.send_goal(self.config['front_pose'],
                                 movement="slow",
                                 inv_kin=True)],
+             main_frame],
+            ["OPEN GRIPPER",
+             lambda: [
+                 self.send_goal_gripper(
+                    position=[gripper_closed_position, -gripper_closed_position]
+                 )],
+             main_frame],
+            ["CLOSE GRIPPER",
+             lambda: [
+                 self.send_goal_gripper(
+                    position=[gripper_open_position, -gripper_open_position]
+                 )],
              main_frame],
             ["HOME",
              lambda: [
@@ -92,7 +142,7 @@ class TkinterGui():
             "Rz or J6:",
             "Solution index:"
         ]
-        default_values = [0, -90, 0, -90, 0, 0, 5]
+        default_values = self.config['robot_home_joint_angles']
         entries = []
         tk.Label(inverse_kinematics_frame,
                  text="Values in deg and meters",
@@ -135,18 +185,24 @@ class TkinterGui():
             self.list_of_values = []
             if not inv_kin_option_var:
                 for entry in entries:
-                    value = float(entry.get())
+                    input_value = entry.get()
+                    if not is_valid_number(input_value):
+                        messagebox.showinfo("Mensagem",
+                                            "Only numbers accepted.")
+                        return
+                    value = float(input_value)
                     value = np.radians(value)
                     self.list_of_values.append(value)
             else:
                 for idx, entry in enumerate(entries):
                     value = float(entry.get())
                     if idx < 3 and value > 0.85:
-                        tk.messagebox.showinfo("Mensagem",
-                                               "The maxium UR5 reach is 0.85m")
+                        messagebox.showinfo("Mensagem",
+                                            "The maxium UR5 reach is 0.85m")
                         return
                     self.list_of_values.append(value)
 
+            print(self.list_of_values)
             self.send_goal(self.list_of_values[:-1],
                            inv_kin=inv_kin_option_var,
                            movement='slow',

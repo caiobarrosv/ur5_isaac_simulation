@@ -1,5 +1,4 @@
 from setuptools import setup
-from glob import glob
 import os
 
 PACKAGE_NAME = 'ur5_isaac_simulation'
@@ -11,21 +10,40 @@ DATA_FILES = [
         ('share/' + PACKAGE_NAME, ['package.xml'])
     ]
 
+
 def package_files(data_files, directory_list):
+    """
+    Get all files in a directory and subdirectory and return a list of tuples.
+
+    Parameters
+    ----------
+    data_files : list
+        List of tuples containing the path to install the files and the files
+        themselves.
+    directory_list : list
+        List of directories to get the files from.
+
+    Returns
+    -------
+    data_files : list
+        List of tuples containing the path to install the files and the files
+        themselves.
+
+    """
     paths_dict = {}
     for directory in directory_list:
-        for (path, directories, filenames) in os.walk(directory):
+        for (path, _, filenames) in os.walk(directory):
             for filename in filenames:
                 file_path = os.path.join(path, filename)
                 install_path = os.path.join('share', PACKAGE_NAME, path)
 
-                if install_path in paths_dict.keys():
+                if install_path in paths_dict:
                     paths_dict[install_path].append(file_path)
                 else:
                     paths_dict[install_path] = [file_path]
 
-    for key in paths_dict.keys():
-        data_files.append((key, paths_dict[key]))
+    for key, value in paths_dict.items():
+        data_files.append((key, value))
 
     return data_files
 
@@ -47,7 +65,8 @@ setup(
         'console_scripts': [
             'ur5_isaac_ros2 = ur5_isaac_simulation.ur5_isaac_ros2:main',
             'ur5_controller = ur5_isaac_simulation.ur5_controller:main',
-            'interactive_marker = ur5_isaac_simulation.interactive_marker:main'
+            'interactive_marker = ur5_isaac_simulation.interactive_marker:main',
+            'gripper_controller = ur5_isaac_simulation.gripper_controller:main'
         ],
     },
 )

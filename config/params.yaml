@@ -19,3 +19,21 @@ ur5_controller_server:
     trajectory_timout: 10 # Timeout for trajectory execution in seconds
                           # Must be greater than the trajectory time set
                           # in the ur5_isaac_ros2 node
+
+gripper_controler_sever:
+  ros__parameters:
+    robotiq_joint_name: ["right_outer_knuckle_joint",
+                         "left_outer_knuckle_joint"]
+    force_threshold: 2000
+    goal_tolerance: [0.05, 0.05]
+    joint_directions_close: [1, -1]
+    trajectory_tolerance_error: 0.001 # Tolerance error per joint in radians
+    trajectory_timout: 6 # Timeout for trajectory execution in seconds
+                          # Must be greater than the trajectory time set
+                          # in the ur5_isaac_ros2 node
+    
+tkinter_gui:
+  front_pose: [0.5, 0.0, 0.5, 0, 90, 0]
+  robot_home_joint_angles: [0, -90, 0, -90, 0, 0, 0]
+  gripper_closed_position: 0.3
+  gripper_open_position: 0.6
