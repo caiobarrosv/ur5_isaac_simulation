@@ -97,13 +97,13 @@ class TkinterGui():
             ["OPEN GRIPPER",
              lambda: [
                  self.send_goal_gripper(
-                    position=[gripper_closed_position, -gripper_closed_position]
+                    position=[gripper_open_position, -gripper_open_position]
                  )],
              main_frame],
             ["CLOSE GRIPPER",
              lambda: [
                  self.send_goal_gripper(
-                    position=[gripper_open_position, -gripper_open_position]
+                    position=[gripper_closed_position, -gripper_closed_position]
                  )],
              main_frame],
             ["HOME",

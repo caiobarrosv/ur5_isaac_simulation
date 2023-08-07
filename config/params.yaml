@@ -35,5 +35,5 @@ gripper_controler_sever:
 tkinter_gui:
   front_pose: [0.5, 0.0, 0.5, 0, 90, 0]
   robot_home_joint_angles: [0, -90, 0, -90, 0, 0, 0]
-  gripper_closed_position: 0.3
-  gripper_open_position: 0.6
+  gripper_closed_position: 0.68
+  gripper_open_position: 0.0
