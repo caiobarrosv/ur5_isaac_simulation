@@ -94,21 +94,29 @@ class TkinterGui():
                                 movement="slow",
                                 inv_kin=True)],
              main_frame],
+            ["HOME",
+             lambda: [
+                 self.send_goal(self.joint_values_home,
+                                movement="slow")],
+             main_frame],
+            ["PICK",
+             lambda: [
+                 self.send_goal(self.config['object_pick_joint_angles'],
+                                movement="slow")],
+             main_frame],
             ["OPEN GRIPPER",
              lambda: [
                  self.send_goal_gripper(
-                    position=[gripper_open_position, -gripper_open_position]
+                    position=[gripper_open_position,
+                              -gripper_open_position]
                  )],
              main_frame],
             ["CLOSE GRIPPER",
              lambda: [
                  self.send_goal_gripper(
-                    position=[gripper_closed_position, -gripper_closed_position]
+                    position=[gripper_closed_position,
+                              -gripper_closed_position]
                  )],
-             main_frame],
-            ["HOME",
-             lambda: [
-                 self.send_goal(self.joint_values_home, movement="slow")],
              main_frame],
             ["Inv/Direct Kinematics",
              lambda: [

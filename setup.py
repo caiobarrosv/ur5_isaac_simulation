@@ -2,7 +2,11 @@ from setuptools import setup
 import os
 
 PACKAGE_NAME = 'ur5_isaac_simulation'
-HELPER_FUNC_SUB_MODULE = 'ur5_isaac_simulation/helper_functions'
+PACKAGES_LIST = [
+    PACKAGE_NAME,
+    'ur5_isaac_simulation.helper_functions',
+    'ur5_isaac_simulation.action_servers',
+]
 
 DATA_FILES = [
         ('share/ament_index/resource_index/packages',
@@ -51,7 +55,7 @@ def package_files(data_files, directory_list):
 setup(
     name=PACKAGE_NAME,
     version='0.0.0',
-    packages=[PACKAGE_NAME, HELPER_FUNC_SUB_MODULE],
+    packages=PACKAGES_LIST,
     data_files=package_files(DATA_FILES, ['meshes/', 'config/', 'urdf/',
                                           'launch/', 'srv/']),
     install_requires=['setuptools'],
@@ -63,10 +67,12 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'ur5_isaac_ros2 = ur5_isaac_simulation.ur5_isaac_ros2:main',
-            'ur5_controller = ur5_isaac_simulation.ur5_controller:main',
-            'interactive_marker = ur5_isaac_simulation.interactive_marker:main',
-            'gripper_controller = ur5_isaac_simulation.gripper_controller:main'
+            # Action Servers
+            'ur5_controller = ur5_isaac_simulation.action_servers.ur5_controller:main',
+            'gripper_controller = ur5_isaac_simulation.action_servers.gripper_controller:main',
+
+            # Nodes
+            'ur5_isaac_ros2 = ur5_isaac_simulation.ur5_isaac_ros2:main'
         ],
     },
 )

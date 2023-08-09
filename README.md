@@ -4,8 +4,8 @@
   - [3.1. Run RVIZ, Controllers and GUI](#31-run-rviz-controllers-and-gui)
   - [3.2. Troubleshooting](#32-troubleshooting)
 - [4. Build](#4-build)
-- [5. Build all packages](#5-build-all-packages)
-- [6. Or only your package](#6-or-only-your-package)
+- [5. Debug](#5-debug)
+- [6. (Optional) Visualize UR5 Frames using the Universal ROS2 Package](#6-optional-visualize-ur5-frames-using-the-universal-ros2-package)
 
 
 ---
@@ -102,14 +102,14 @@ ros2 run ur5_isaac_simulation ur5_isaac_ros2
    git clone THIS_REPOSITORY_LINK
    ```
    
-   Build the all package or only your package
- - ```bash
-   cd YOUR_WORKSPACE
-   # 5. Build all packages
-   colcon build
-   # 6. Or only your package
-   colcon build --packages-select my_package
-   ```
+  - Build the all package or only your package
+    ```bash
+    cd YOUR_WORKSPACE
+    # 5. Build all packages
+    colcon build
+    # 6. Or only your package
+    colcon build --packages-select my_package
+    ```
  - Source ROS2 and your ROS2 workspace:
     ```bash
     # source ROS2 Humble
@@ -126,7 +126,23 @@ ros2 run ur5_isaac_simulation ur5_isaac_ros2
     ```
 
 ---
-# (Optional) Visualize UR5 Frames using the Universal ROS2 Package
+# 5. Debug
+
+In order to debug the ROS2 nodes, follow the steps:
+- Install this [ROS Extension](https://marketplace.visualstudio.com/items?itemName=ms-iot.vscode-ros).
+- Create a launch file and include all the nodes you want to debug.
+- Open the workspace folder in vscode and build with `ctrl+shift+b` using colcon build. If you have the wrong folder opened in vscode, it is going to create the build folders in the wrong location.
+- Create a debug configuration in launch.json with the following parameters:
+  ```json
+    {
+      "name": "ROS: Launch",
+      "type": "ros",
+      "request": "launch",
+      "target": "path_to_launch_file"
+    },
+  ```
+
+# 6. (Optional) Visualize UR5 Frames using the Universal ROS2 Package
 
 You might want to visualize the UR5 frames in order to study direct or inverse kinematics.
 Follow the next steps to visualize the UR5 frames in RVIZ and control it using joint state publisher.
