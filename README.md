@@ -1,8 +1,7 @@
 - [1. Overview](#1-overview)
 - [2. Maintainer](#2-maintainer)
 - [3. Run Isaac Sim](#3-run-isaac-sim)
-  - [3.1. Run RVIZ, Controllers and GUI](#31-run-rviz-controllers-and-gui)
-  - [3.2. Troubleshooting](#32-troubleshooting)
+  - [3.1. Troubleshooting](#31-troubleshooting)
 - [4. Build](#4-build)
 - [5. Debug](#5-debug)
 - [6. (Optional) Visualize UR5 Frames using the Universal ROS2 Package](#6-optional-visualize-ur5-frames-using-the-universal-ros2-package)
@@ -44,39 +43,10 @@ sudo apt-get remove --purge '^nvidia-.*'
 
 ---
 # 3. Run Isaac Sim
- - The Isaac Python is in the following folder (Verify your Isaac Version).
-    ```
-    /home/$USER/.local/share/ov/pkg/isaac_sim-2022.2.1/kit/python/bin/python3
-    ```
-    Check the following [page](https://docs.omniverse.nvidia.com/app_isaacsim/app_isaacsim/manual_standalone_python.html) for more instructions.
 
-  - To reduce manual work in openning Isaac Sim, add the following alias to the .bashrc file.
-    ```bash
-    python_isaac() {
-      "/home/caio/.local/share/ov/pkg/isaac_sim-2022.2.1/python.sh" "$1"
-      }
-    ```
-  
-  - Just run the run_simulation.py (**Do not source ROS2 in this terminal**):
-    ```bash
-    python_isaac run_simulation.py
-    ```
-  - (**OPTINAL**) - Add the following alias to the ~/.bashrc file to build and run and build your main code faster:
-    ```bash
-    alias build_ur5='source /opt/ros/humble/setup.bash && cd ~/YOUR_WORKSPACE && colcon build && source install/setup.bash'
-    alias run_ur5='ros2 run ur5_isaac_simulation ur5_isaac_ros2'
-    ```
-
-## 3.1. Run RVIZ, Controllers and GUI
-
-- In order to visualize the frames in RVIZ, run the following command:
+- The following launch file executes the UR5 and Robotiq 2F-140 controllers and also opens RVIZ2:
 ```bash
 ros2 launch ur5_isaac_simulation ur5_isaac_ros2.launch.py
-```
-
-- Run the UR5 controller to receive joint goals and plan the trajectory using commonly used trajectory planners. This node will send commands to Isaac Sim.
-```bash
-ros2 run ur5_isaac_simulation ur5_controller
 ```
 
 - Run the UR5 Isaac Simulation main node
@@ -84,7 +54,7 @@ ros2 run ur5_isaac_simulation ur5_controller
 ros2 run ur5_isaac_simulation ur5_isaac_ros2
 ```
 
-## 3.2. Troubleshooting
+## 3.1. Troubleshooting
   - Isaac Sim takes some time to load when the following warning message appears. In this case, just wait a few seconds (280 or more depending on your GPU).
     ```bash
     [Warning] [gpu.foundation.plugin] Waiting for compilation of ray tracing shaders by GPU driver: 30 seconds so far

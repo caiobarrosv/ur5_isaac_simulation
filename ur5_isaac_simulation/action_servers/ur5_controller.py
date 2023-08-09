@@ -9,14 +9,14 @@ from control_msgs.action import FollowJointTrajectory
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.action import ActionServer
 from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from sensor_msgs.msg import JointState
-from rclpy.executors import MultiThreadedExecutor
 
+from ur5_isaac_simulation.helper_functions import trajectory_check as tc
 from ur5_isaac_simulation.helper_functions.load_ros_parameters import \
     get_ros_parameters
-from ur5_isaac_simulation.helper_functions import trajectory_check as tc
 
 
 class UR5TrajController(Node):
