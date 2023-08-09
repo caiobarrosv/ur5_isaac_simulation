@@ -1,17 +1,15 @@
 ur5_isaac_ros2:
   ros__parameters:
     home_joint_array: [0.0, -1.57, 0.0, -1.57, 0.0, 0.0]
-    home_position: [0.05, 0.6, 0.7]
-    home_orientation: [3.14, 0.0, 0.0]
     trajectory_time_slow: 5
     trajectory_time_fast: 3
-    trajectory_time: 6
     cube_size: 0.04 # Size of the target cube in RVIZ2
     interactive_marker_size: 0.2 # size of the interactive marker in RVIZ2
 
+
 ur5_controller_server:
   ros__parameters:
-    trajectory_type: 1 # 1 for cubic interpolation
+    trajectory_type: 2 # 1 for cubic interpolation
                        # 2 for quintic interpolation
                        # 3 for LSPB
                        # 4 for Minimum Time Trajectories (Spong)
@@ -19,3 +17,25 @@ ur5_controller_server:
     trajectory_timout: 10 # Timeout for trajectory execution in seconds
                           # Must be greater than the trajectory time set
                           # in the ur5_isaac_ros2 node
+
+
+gripper_controler_sever:
+  ros__parameters:
+    robotiq_joint_name: ["right_outer_knuckle_joint",
+                         "left_outer_knuckle_joint"]
+    force_threshold: 500 # Force threshold for the gripper to stop
+                         # 125 N is the 2F-140 maximum grip force
+    goal_tolerance: [0.05, 0.05]
+    joint_directions_close: [1, -1]
+    trajectory_tolerance_error: 0.001 # Tolerance error per joint in radians
+    trajectory_timout: 6 # Timeout for trajectory execution in seconds
+                          # Must be greater than the trajectory time set
+                          # in the ur5_isaac_ros2 node
+
+
+tkinter_gui:
+  front_pose: [0.5, 0.0, 0.5, 0, 90, 0]
+  robot_home_joint_angles: [0, -90, 0, -90, 0, 0, 0]
+  object_pick_joint_angles: [0.0919, -1.6181, -2.0293, -1.067, 1.5749, 0.0714]
+  gripper_closed_position: 0.68
+  gripper_open_position: 0.0

@@ -11,7 +11,8 @@ from visualization_msgs.msg import (InteractiveMarker,
 
 class InteractiveMarkerUR5():
     """Interactive marker for the UR5 robot simulation in Isaac Sim."""
-    def __init__(self, interactive_server, send_goal, ros_parameters):
+    def __init__(self, interactive_server, send_goal,
+                 transform_between_frames, ros_parameters):
         """Interactive marker for the UR5 robot simulation in Isaac Sim.
 
         Parameters
@@ -20,12 +21,15 @@ class InteractiveMarkerUR5():
             The interactive marker server
         send_goal : function
             The function to send the goal to the UR5 robot
+        transform_between_frames : function
+            The function to transform between tf frames
         ros_parameters : dict
             The ROS parameters
 
         """
         self.interactive_marker_server = interactive_server
         self.send_goal = send_goal
+        self.transform_between_frames = transform_between_frames
 
         self.menu_handler = MenuHandler()
         self.menu_handler.insert(
@@ -34,6 +38,9 @@ class InteractiveMarkerUR5():
         self.menu_handler.insert(
             title='Reset position',
             callback=self.reset_interactive_marker_pose)
+        self.menu_handler.insert(
+            title='Set position to End-effector',
+            callback=self.set_interactive_marker_pose)
         self.cube_size = ros_parameters['cube_size']
         self.interactive_marker_size =\
             ros_parameters['interactive_marker_size']
@@ -41,6 +48,29 @@ class InteractiveMarkerUR5():
     def _get_marker_feedback(self, feedback):
         """Not implemented yet."""
         return NotImplemented
+
+    def set_interactive_marker_pose(self, feedback):
+        """Set the interactive marker pose to the end-effector pose.
+
+        Parameters
+        ----------
+        feedback : InteractiveMarkerFeedback
+            The feedback from the interactive marker
+
+        """
+        position_link_06, _ =\
+            self.transform_between_frames("base_link_inertia", "wrist_3_link")
+        x = position_link_06.transform.translation.x
+        y = position_link_06.transform.translation.y
+        z = position_link_06.transform.translation.z
+
+        self.interactive_marker_server.setPose(
+            "base_link_inertia",
+            pose=Pose(
+                position=Point(x=x, y=y, z=z),
+                orientation=position_link_06.transform.rotation),
+            header=Header(frame_id="base_link_inertia"))
+        self.interactive_marker_server.applyChanges()
 
     def reset_interactive_marker_pose(self, feedback):
         """Reset the interactive marker pose to the initial position.
