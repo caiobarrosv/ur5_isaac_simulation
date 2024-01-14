@@ -1,11 +1,13 @@
 - [1. Overview](#1-overview)
 - [2. Maintainer](#2-maintainer)
-- [Installation](#installation)
-- [3. Run Isaac Sim](#3-run-isaac-sim)
-  - [3.1. Troubleshooting](#31-troubleshooting)
-- [4. Build](#4-build)
-- [5. Debug](#5-debug)
-- [6. (Optional) Visualize UR5 Frames using the Universal ROS2 Package](#6-optional-visualize-ur5-frames-using-the-universal-ros2-package)
+- [3. Installation](#3-installation)
+  - [3.1. Extension Activation](#31-extension-activation)
+  - [3.2. Dependencies](#32-dependencies)
+- [4. Run Isaac Sim](#4-run-isaac-sim)
+  - [4.1. Troubleshooting](#41-troubleshooting)
+- [5. Build](#5-build)
+- [6. Debug](#6-debug)
+- [7. (Optional) Visualize UR5 Frames using the Universal ROS2 Package](#7-optional-visualize-ur5-frames-using-the-universal-ros2-package)
 
 
 ---
@@ -26,29 +28,35 @@ This repository contains the environment to run and test algorithms for the UR5 
 # 2. Maintainer
 
 **Authors:** Caio Viturino
-**Affiliation:** UFBA (PhD Candidate) / SENAI SIMATEC (Robotics Specialist)
+**Affiliation:** SENAI SIMATEC (Robotics Specialist)
 **Maintainers:** Caio Viturino (engcaiobarros@gmail.com / caio.viturino@fieb.org.br)
 
 The `ur5_isaac_simulation` package has been tested under [ROS] Humble and Ubuntu 22.04. 
 
 | OS | ROS | Isaac Sim | CUDA | Nvidia Driver |
 | :---: | :---: | :---: | :---: | :---: |
-| Ubuntu 22.04 | ROS2 Humble | 2022.2.1 | 12.0 | 525.105.17
+| Ubuntu 22.04 | ROS2 Humble | 2023.1.1 | 12.0 | 525.105.17
 
-⚠️ Please check the minimum hardware requirement to run ISAAC SIM in this [website](https://docs.omniverse.nvidia.com/app_isaacsim/app_isaacsim/requirements.html#isaac-sim-short-system-requirements). It is highly recommended to have at least an RTX 3060 GPU.
+> :warning: Please note that this extension only works with **Isaac Sim 2023.1.1**
+> Also check the minimum hardware requirement to run ISAAC SIM in this [website](https://docs.omniverse.nvidia.com/app_isaacsim/app_isaacsim/requirements.html#isaac-sim-short-system-requirements). It is highly recommended to have at least an RTX 3060 GPU.
+
 
 The simplest way to install the nvidia driver is to go to "Additional drivers" and choose `"using NVIDIA driver metapackage from nvidia-driver-525 (proprietary)"`. If you have any trouble installing this driver, uninstall the all the nvidia drivers before installing a new one: 
 ```bash
 sudo apt-get remove --purge '^nvidia-.*'
 ```
 ---
-# Installation
+# 3. Installation
 
-Add the isaac_extensions folder to the extension path and activate the extension. Mark the option AUTOLOAD.
+## 3.1. Extension Activation
+Add the exts/exts folder to the extension path and activate the extension. Mark the option AUTOLOAD.
 
+![Extension Configuration](images/extension_contact_ext.png)
 ![Extension Configuration](images/extension_contact.png)
 ![Extension Configuration](images/extension_contact2.png)
 
+
+## 3.2. Dependencies
 Please install the following before proceeding:
 
 ```bash
@@ -57,12 +65,12 @@ sudo apt install ros-humble-vision-msgs ros-humble-control-msgs \
   ros-humble-xacro
 ```
 
-First time using ROS? You'll probably need one of these:
+First time using ROS2? You'll probably need to install colcon-common-extensions:
 ```bash
 pip install -U colcon-common-extensions
 ```
 ---
-# 3. Run Isaac Sim
+# 4. Run Isaac Sim
 
 - The following launch file executes the UR5 and Robotiq 2F-140 controllers and also opens RVIZ2:
 ```bash
@@ -74,7 +82,7 @@ ros2 launch ur5_isaac_simulation ur5_isaac_ros2.launch.py
 ros2 run ur5_isaac_simulation ur5_isaac_ros2
 ```
 
-## 3.1. Troubleshooting
+## 4.1. Troubleshooting
   - Isaac Sim takes some time to load when the following warning message appears. In this case, just wait a few seconds (280 or more depending on your GPU).
     ```bash
     [Warning] [gpu.foundation.plugin] Waiting for compilation of ray tracing shaders by GPU driver: 30 seconds so far
@@ -85,7 +93,7 @@ ros2 run ur5_isaac_simulation ur5_isaac_ros2
     ```
 
 ---
-# 4. Build
+# 5. Build
  - Clone this repository inside your src folder
    ```bash
    cd YOUR_WORKSPACE/src
@@ -116,7 +124,7 @@ ros2 run ur5_isaac_simulation ur5_isaac_ros2
     ```
 
 ---
-# 5. Debug
+# 6. Debug
 
 In order to debug the ROS2 nodes, follow the steps:
 - Install this [ROS Extension](https://marketplace.visualstudio.com/items?itemName=ms-iot.vscode-ros).
@@ -132,7 +140,7 @@ In order to debug the ROS2 nodes, follow the steps:
     },
   ```
 
-# 6. (Optional) Visualize UR5 Frames using the Universal ROS2 Package
+# 7. (Optional) Visualize UR5 Frames using the Universal ROS2 Package
 
 You might want to visualize the UR5 frames in order to study direct or inverse kinematics.
 Follow the next steps to visualize the UR5 frames in RVIZ and control it using joint state publisher.
