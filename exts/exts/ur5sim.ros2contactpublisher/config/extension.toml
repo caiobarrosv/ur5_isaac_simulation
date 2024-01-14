@@ -1,0 +1,36 @@
+
+[package]
+# Semantic Versioning is used: https://semver.org/
+version = "0.1.1"
+
+# Lists people or organizations that are considered the "authors" of the package.
+authors = ["Caio Viturino"]
+
+# The title and description fields are primarly for displaying extension info in UI
+title = "ROS2 Contact and Force Publisher"
+description="Extension to publish contact and force values to ROS2."
+
+# Path (relative to the root) or content of readme markdown file for UI.
+readme  = "docs/README.md"
+
+# URL of the extension source repository.
+repository="https://github.com/caiobarrosv/ur5_isaac_simulation"
+
+# Categories for UI.
+category = "Example"
+
+# Keywords for the extension
+keywords = ["contact publisher", "force publisher"]
+
+# Watch the .ogn files for hot reloading (only works for Python files)
+[fswatcher.patterns]
+include = ["*.ogn", "*.py"]
+exclude = ["Ogn*Database.py"]
+
+[dependencies]
+"omni.kit.test" = {}
+"omni.graph" = {}
+
+# Main python module this extension provides, it will be publicly available as "import ur5sim.ros2contactpublisher".
+[[python.module]]
+name = "ur5sim.ros2contactpublisher"

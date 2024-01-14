@@ -1,0 +1,44 @@
+{
+    "ROS2ContactPublisher": {
+        "version": 1,
+        "description": "Publishes contact and force values",
+        "language": "Python",
+        "metadata": {
+            "uiName": "ROS2ContactPublisher"
+        },
+        "inputs": {
+            "left_contact_bool": {
+                "type": "bool",
+                "description": "Input double",
+                "metadata": {
+                    "uiName": "Left Contact Bool"
+                },
+                "default": false
+            },
+            "right_contact_bool": {
+                "type": "bool",
+                "description": "True if the mesh is in contact with another one",
+                "metadata": {
+                    "uiName": "Right Contact bool"
+                },
+                "default": false
+            },
+            "left_force_value": {
+                "type": "float",
+                "description": "Force being applied to the left pad",
+                "default": 0,
+                "metadata": {
+                    "uiName": "Left Force Value"
+                }
+            },
+            "right_force_value": {
+                "type": "float",
+                "description": "Force being applied to the right pad",
+                "default": 0,
+                "metadata": {
+                    "uiName": "Right Force Value"
+                }
+            }
+        }
+    }
+}

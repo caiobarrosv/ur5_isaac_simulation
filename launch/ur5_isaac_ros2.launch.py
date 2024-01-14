@@ -62,17 +62,10 @@ def generate_launch_description():
         executable='gripper_controller'
     )
 
-    ur5_main_node = Node(
-        package='ur5_isaac_simulation',
-        name='ur5_isaac_ros2',
-        executable='ur5_isaac_ros2'
-    )
-
     nodes_to_start = [
         ur5_traj_server,
         gripper_traj_server,
-        # ur5_main_node,
         robot_state_publisher_node,
-        rviz_node,
+        rviz_node
     ]
     return LaunchDescription(nodes_to_start)

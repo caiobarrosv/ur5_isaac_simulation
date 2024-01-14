@@ -315,9 +315,10 @@ class UR5TrajController(Node):
         return self.pos_atual, self.vel_atual
 
     def init_interp_cubic(self):
+        """Interpolate a cubic polynomial trajectory"""
         q0 = self.trajectory_position_list[0]
-        v0 = self.trajectory_velocity_list[0]
         qf = self.trajectory_position_list[-1]
+        v0 = self.trajectory_velocity_list[0]
         vf = self.trajectory_velocity_list[-1]
         t0 = self.time_from_start_list[0]
         tf = self.time_from_start_list[-1]

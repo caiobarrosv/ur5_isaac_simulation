@@ -1,5 +1,6 @@
 - [1. Overview](#1-overview)
 - [2. Maintainer](#2-maintainer)
+- [Installation](#installation)
 - [3. Run Isaac Sim](#3-run-isaac-sim)
   - [3.1. Troubleshooting](#31-troubleshooting)
 - [4. Build](#4-build)
@@ -40,7 +41,26 @@ The simplest way to install the nvidia driver is to go to "Additional drivers" a
 ```bash
 sudo apt-get remove --purge '^nvidia-.*'
 ```
+---
+# Installation
 
+Add the isaac_extensions folder to the extension path and activate the extension. Mark the option AUTOLOAD.
+
+![Extension Configuration](images/extension_contact.png)
+![Extension Configuration](images/extension_contact2.png)
+
+Please install the following before proceeding:
+
+```bash
+sudo apt install ros-humble-vision-msgs ros-humble-control-msgs \
+  ros-humble-tf-transformations ros-humble-joint-state-publisher \
+  ros-humble-xacro
+```
+
+First time using ROS? You'll probably need one of these:
+```bash
+pip install -U colcon-common-extensions
+```
 ---
 # 3. Run Isaac Sim
 

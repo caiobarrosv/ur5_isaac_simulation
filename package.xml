@@ -8,8 +8,6 @@
   <license>BSD-2.0</license>
 
   <depend>geometry_msgs</depend>
-
-  <exec_depend>tutorial_interfaces</exec_depend>
   
   <exec_depend>control_msgs</exec_depend>
   <test_depend>ament_copyright</test_depend>
