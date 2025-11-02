@@ -28,8 +28,8 @@ This repository contains the environment to run and test algorithms for the UR5 
 # 2. Maintainer
 
 **Authors:** Caio Viturino
-**Affiliation:** SENAI SIMATEC (Robotics Specialist)
-**Maintainers:** Caio Viturino (engcaiobarros@gmail.com / caio.viturino@fieb.org.br)
+
+**Maintainers:** Caio Viturino (engcaiobarros@gmail.com)
 
 The `ur5_isaac_simulation` package has been tested under [ROS] Humble and Ubuntu 22.04. 
 
