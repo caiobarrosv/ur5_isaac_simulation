@@ -30,6 +30,7 @@ exclude = ["Ogn*Database.py"]
 [dependencies]
 "omni.kit.test" = {}
 "omni.graph" = {}
+"isaacsim.ros2.bridge" = {}
 
 # Main python module this extension provides, it will be publicly available as "import ur5sim.ros2contactpublisher".
 [[python.module]]
