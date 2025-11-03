@@ -4,10 +4,16 @@
   - [3.1. Extension Activation](#31-extension-activation)
   - [3.2. Dependencies](#32-dependencies)
 - [4. Run Isaac Sim](#4-run-isaac-sim)
-  - [4.1. Troubleshooting](#41-troubleshooting)
+  - [4.1. Running Isaac Sim with UR5 Scene](#41-running-isaac-sim-with-ur5-scene)
+  - [4.2. Running ROS2 Controllers](#42-running-ros2-controllers)
+  - [4.3. Running Individual Nodes](#43-running-individual-nodes)
+  - [4.4. Available ROS2 Topics](#44-available-ros2-topics)
 - [5. Build](#5-build)
+  - [5.1. Native Build (without Docker)](#51-native-build-without-docker)
+  - [5.2. Docker Build](#52-docker-build)
 - [6. Debug](#6-debug)
-- [7. (Optional) Visualize UR5 Frames using the Universal ROS2 Package](#7-optional-visualize-ur5-frames-using-the-universal-ros2-package)
+- [7. Troubleshooting](#7-troubleshooting)
+- [8. (Optional) Visualize UR5 Frames using the Universal ROS2 Package](#8-optional-visualize-ur5-frames-using-the-universal-ros2-package)
 
 
 ---
@@ -35,10 +41,10 @@ The `ur5_isaac_simulation` package has been tested under [ROS] Humble and Ubuntu
 
 | OS | ROS | Isaac Sim | CUDA | Nvidia Driver |
 | :---: | :---: | :---: | :---: | :---: |
-| Ubuntu 22.04 | ROS2 Humble | 2023.1.1 | 12.0 | 525.105.17
+| Ubuntu 22.04 | ROS2 Humble | 5.1.0 | 12.0+ | 525+
 
-> :warning: Please note that this extension only works with **Isaac Sim 2023.1.1**
-> Also check the minimum hardware requirement to run ISAAC SIM in this [website](https://docs.omniverse.nvidia.com/app_isaacsim/app_isaacsim/requirements.html#isaac-sim-short-system-requirements). It is highly recommended to have at least an RTX 3060 GPU.
+> :warning: This package is compatible with **Isaac Sim 5.1.0**
+> Check the minimum hardware requirements to run Isaac Sim on the [official website](https://docs.isaacsim.omniverse.nvidia.com/latest/installation/requirements.html). It is highly recommended to have at least an RTX 3060 GPU.
 
 
 The simplest way to install the nvidia driver is to go to "Additional drivers" and choose `"using NVIDIA driver metapackage from nvidia-driver-525 (proprietary)"`. If you have any trouble installing this driver, uninstall the all the nvidia drivers before installing a new one: 
@@ -72,56 +78,139 @@ pip install -U colcon-common-extensions
 ---
 # 4. Run Isaac Sim
 
-- The following launch file executes the UR5 and Robotiq 2F-140 controllers and also opens RVIZ2:
+## 4.1. Running Isaac Sim with UR5 Scene
+
+1. **Open Isaac Sim 5.1.0**
+   ```bash
+   cd ~/isaac-sim-standalone-5.1.0-linux-x86_64
+   ./isaac-sim.sh
+   ```
+
+2. **Load the UR5 Scene**
+   - In Isaac Sim, go to `File → Open`
+   - Navigate to: `/path/to/ur5_ws/src/ur5_isaac_simulation/usd/ur5_isaac_sim.usd`
+   - The scene will load with the UR5 robot and Robotiq 2F-140 gripper
+
+3. **Enable ROS2 Bridge** (if not already enabled)
+   - Go to `Window → Extensions`
+   - Search for "ROS2 Bridge"
+   - Enable the extension
+
+4. **Start the Simulation**
+   - Click the `Play` button in Isaac Sim
+   - The simulation will start publishing ROS2 topics
+
+## 4.2. Running ROS2 Controllers
+
+In a new terminal, source your workspace and launch the controllers:
+
 ```bash
+# Source ROS2 and workspace
+source /opt/ros/humble/setup.bash
+cd ~/ur5_ws
+source install/setup.bash
+
+# Launch UR5 controllers and RVIZ2
 ros2 launch ur5_isaac_simulation ur5_isaac_ros2.launch.py
 ```
 
-- Run the UR5 Isaac Simulation main node
+This will start:
+- UR5 trajectory controller
+- Robotiq 2F-140 gripper controller
+- RVIZ2 visualization
+
+## 4.3. Running Individual Nodes
+
+If you prefer to run nodes separately:
+
 ```bash
+# UR5 main controller
 ros2 run ur5_isaac_simulation ur5_isaac_ros2
+
+# UR5 trajectory action server
+ros2 run ur5_isaac_simulation ur5_controller_server
+
+# Gripper action server
+ros2 run ur5_isaac_simulation gripper_controller_server
 ```
 
-## 4.1. Troubleshooting
-  - Isaac Sim takes some time to load when the following warning message appears. In this case, just wait a few seconds (280 or more depending on your GPU).
-    ```bash
-    [Warning] [gpu.foundation.plugin] Waiting for compilation of ray tracing shaders by GPU driver: 30 seconds so far
-    ```
-    After the following warning message appears, Isaac sim should not take too long to load:
-    ```bash
-    [gpu.foundation.plugin] Ray tracing shader compilation finished after 281 seconds
-    ```
+## 4.4. Available ROS2 Topics
+
+The simulation publishes/subscribes to the following topics:
+
+```bash
+# Joint states (from Isaac Sim)
+/joint_states
+
+# Joint commands (to Isaac Sim)
+/isaac_joint_commands
+
+# Contact sensor data
+/ur5_contact_publisher
+
+# Action servers
+/ur5_controller (FollowJointTrajectory)
+/gripper_controller (FollowJointTrajectory)
+```
 
 ---
 # 5. Build
- - Clone this repository inside your src folder
-   ```bash
-   cd YOUR_WORKSPACE/src
-   git clone THIS_REPOSITORY_LINK
-   ```
-   
-  - Build the all package or only your package
-    ```bash
-    cd YOUR_WORKSPACE
-    # 5. Build all packages
-    colcon build
-    # 6. Or only your package
-    colcon build --packages-select my_package
-    ```
- - Source ROS2 and your ROS2 workspace:
-    ```bash
-    # source ROS2 Humble
-    source /opt/ros/humble/setup.bash
-    # your your workspace
-    cd YOUR_WORKSPACE
-    source install/local_setup.bash
-    ```
 
- - Install the package dependencies:
-    ```bash
-    cd YOUR_WORKSPACE
-    rosdep install --from-paths src -y --ignore-src --rosdistro humble
-    ```
+## 5.1. Native Build (without Docker)
+
+1. **Clone this repository**
+   ```bash
+   cd ~/ur5_ws/src
+   git clone <THIS_REPOSITORY_URL>
+   ```
+
+2. **Install package dependencies**
+   ```bash
+   cd ~/ur5_ws
+   rosdep install --from-paths src -y --ignore-src --rosdistro humble
+   ```
+
+3. **Build the workspace**
+   ```bash
+   cd ~/ur5_ws
+   source /opt/ros/humble/setup.bash
+   colcon build --packages-select ur5_isaac_simulation
+   ```
+
+4. **Source the workspace**
+   ```bash
+   source ~/ur5_ws/install/setup.bash
+   ```
+
+## 5.2. Docker Build
+
+For a containerized environment with Isaac Sim 5.1.0 and ROS2 Humble pre-installed:
+
+1. **Navigate to docker directory**
+   ```bash
+   cd ~/ur5_ws/src/ur5_isaac_simulation/docker
+   ```
+
+2. **Build and run the container**
+   ```bash
+   # Build and run in development mode
+   ./run_services.sh -b dev
+
+   # Or run simulation service
+   ./run_services.sh -b sim
+   ```
+
+3. **Inside the container**
+   ```bash
+   # Workspace is pre-built at /workspace/ur5_ws
+   cd /workspace/ur5_ws
+   source install/setup.bash
+
+   # Run Isaac Sim
+   /home/user/isaacsim/isaac-sim.sh
+   ```
+
+For more details, see [docker/README.md](docker/README.md)
 
 ---
 # 6. Debug
@@ -140,7 +229,66 @@ In order to debug the ROS2 nodes, follow the steps:
     },
   ```
 
-# 7. (Optional) Visualize UR5 Frames using the Universal ROS2 Package
+---
+# 7. Troubleshooting
+
+## Contact Sensor Extension Not Loading
+
+If the `ur5sim.ros2contactpublisher` extension fails to load:
+
+1. **Check extension path** in Isaac Sim:
+   - `Window → Extensions`
+   - Click the gear icon
+   - Add path: `/path/to/ur5_ws/src/ur5_isaac_simulation/exts/exts`
+
+2. **Enable AUTOLOAD** for the extension
+
+3. **Regenerate the database** if you modified the `.ogn` file:
+   ```bash
+   cd ~/ur5_ws/src/ur5_isaac_simulation/exts/exts/ur5sim.ros2contactpublisher
+   ~/isaac-sim-standalone-5.1.0-linux-x86_64/kit/python/bin/python3 -m omni.graph.tools.ogn \
+     ur5sim/ros2contactpublisher/ogn/python/nodes/ROS2ContactPublisher.ogn
+   ```
+
+## ROS2 Topics Not Publishing
+
+1. **Verify ROS2 Bridge is active**:
+   ```bash
+   ros2 topic list
+   ```
+   You should see `/joint_states`, `/isaac_joint_commands`, etc.
+
+2. **Check ROS_DOMAIN_ID matches** between Isaac Sim and your terminal:
+   ```bash
+   echo $ROS_DOMAIN_ID
+   ```
+
+3. **Restart Isaac Sim** and reload the scene
+
+## Gripper Not Moving
+
+1. **Check contact data format**:
+   ```bash
+   ros2 topic echo /ur5_contact_publisher
+   ```
+   Should show: `[left_force, right_force, left_contact, right_contact]`
+
+2. **Verify gripper controller is running**:
+   ```bash
+   ros2 node list | grep gripper
+   ```
+
+3. **Check force threshold** in `config/params.yaml` (default: 500N)
+
+## Isaac Sim Performance Issues
+
+- Reduce physics simulation rate
+- Disable real-time rendering
+- Close other GPU-intensive applications
+- See [Isaac Sim Linux Troubleshooting](https://docs.isaacsim.omniverse.nvidia.com/latest/troubleshooting.html)
+
+---
+# 8. (Optional) Visualize UR5 Frames using the Universal ROS2 Package
 
 You might want to visualize the UR5 frames in order to study direct or inverse kinematics.
 Follow the next steps to visualize the UR5 frames in RVIZ and control it using joint state publisher.

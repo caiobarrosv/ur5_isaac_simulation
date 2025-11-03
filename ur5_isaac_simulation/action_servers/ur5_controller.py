@@ -92,18 +92,29 @@ class UR5TrajController(Node):
         self,
         msg: JointState
     ):
-        """Get simulated UR5 joint angles in the following order:
+        """Extract UR5 robot joint states by matching joint names.
 
-        shoulder_pan_joint, shoulder_lift_joint, elbow_joint
-        wrist_1_joint, wrist_2_joint, wrist_3_joint
+        Since the articulation now includes both robot and gripper joints,
+        we need to filter by name instead of using array slicing.
+
+        Joint order: shoulder_pan_joint, shoulder_lift_joint, elbow_joint,
+                    wrist_1_joint, wrist_2_joint, wrist_3_joint
 
         Parameters
         ----------
         msg : JointState
-            JointState message from the /joint_states topic
+            JointState message from the /joint_states topic containing
+            all robot and gripper joints
 
         """
-        self.joint_states = msg.position[0:6]
+        # Create a dictionary mapping joint names to positions
+        joint_dict = dict(zip(msg.name, msg.position))
+
+        # Extract only the UR5 joints in the correct order
+        self.joint_states = [
+            joint_dict.get(joint_name, 0.0)
+            for joint_name in self.ur5_joint_names
+        ]
 
     async def execute_callback(self, goal_handle):
         """Handle a new goal trajectory command.

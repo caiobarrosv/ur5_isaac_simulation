@@ -114,21 +114,33 @@ class UR5GripperTrajController(Node):
         msg: JointState
     ):
         """
-        Get simulated Robotiq gripper joint angles in the following order:
+        Extract gripper joint states by matching joint names.
 
-        shoulder_pan_joint, shoulder_lift_joint, elbow_joint
-        wrist_1_joint, wrist_2_joint, wrist_3_joint
+        Since the articulation now includes both robot and gripper joints,
+        we need to filter by name instead of using hardcoded indices.
 
         Parameters
         ----------
         msg : JointState
-            JointState message from the /joint_states topic
+            JointState message from the /joint_states topic containing
+            all robot and gripper joints
 
         """
-        joint_positions = msg.position
-        right_outer_knuckle_joing = joint_positions[-3]
-        finger_joint = joint_positions[-6]
-        self.joint_states = [finger_joint, right_outer_knuckle_joing]
+        # Create a dictionary mapping joint names to positions
+        joint_dict = dict(zip(msg.name, msg.position))
+
+        # Extract only the gripper joints we care about
+        finger_joint = joint_dict.get("finger_joint", 0.0)
+        right_outer_knuckle_joint = joint_dict.get("right_outer_knuckle_joint", 0.0)
+        self.joint_states = [finger_joint, right_outer_knuckle_joint]
+
+        # Warn if expected joints are missing (only check once on first call)
+        if not hasattr(self, '_joint_warning_shown'):
+            if "finger_joint" not in joint_dict:
+                self.get_logger().warn("finger_joint not found in /joint_states")
+            if "right_outer_knuckle_joint" not in joint_dict:
+                self.get_logger().warn("right_outer_knuckle_joint not found in /joint_states")
+            self._joint_warning_shown = True
 
     def update_contact_state(
         self,
@@ -147,8 +159,10 @@ class UR5GripperTrajController(Node):
             The array data contains the following values in order:
             - force applied to the gripper left gripper pad (float)
             - force applied to the gripper right gripper pad (float)
-            - Left gripper contact detection (bool, True if contact)
-            - Right gripper contact detection (bool, True if contact)
+            - Left gripper contact detection (float, 1.0 if contact, 0.0 if not)
+            - Right gripper contact detection (float, 1.0 if contact, 0.0 if not)
+
+            Note: Contact bools are encoded as floats (1.0/0.0) due to ROS2 Float32MultiArray format.
 
         """
         self.contact_state = msg.data
@@ -174,9 +188,20 @@ class UR5GripperTrajController(Node):
         if not self.trajectory_in_execution:
             self.get_logger().info('[GRIPPER] Executing goal...')
 
-            contact_report = self.contact_state
-            grippers_in_contact = contact_report[2] and contact_report[3]
-            self.gripper_initially_in_contact = grippers_in_contact
+            # Check if contact sensor data is available
+            if self.contact_state is not None and len(self.contact_state) >= 4:
+                contact_report = self.contact_state
+                # Convert float-encoded bools (1.0/0.0) to actual bools
+                left_contact = bool(contact_report[2] > 0.5)
+                right_contact = bool(contact_report[3] > 0.5)
+                grippers_in_contact = left_contact and right_contact
+                self.gripper_initially_in_contact = grippers_in_contact
+            else:
+                if self.contact_state is None:
+                    self.get_logger().warn('[GRIPPER] Contact sensor data not available yet, assuming no initial contact')
+                else:
+                    self.get_logger().warn(f'[GRIPPER] Contact sensor data incomplete (length={len(self.contact_state)}), expected 4 values')
+                self.gripper_initially_in_contact = False
 
             self.init_trajectory_gripper()
             initialized_correctly, msg =\
@@ -364,11 +389,18 @@ class UR5GripperTrajController(Node):
                     position[i] = self.joint_directions_close[i] * \
                         abs(position[i])
 
-                contact_report = self.contact_state
-                grippers_in_contact = contact_report[2] and contact_report[3]
-                grippers_force_above_threshold =\
-                    contact_report[0] > self.ros_parameters['force_threshold'] \
-                    and contact_report[1] > self.ros_parameters['force_threshold']
+                # Check contact state only if available
+                grippers_in_contact = False
+                grippers_force_above_threshold = False
+                if self.contact_state is not None and len(self.contact_state) >= 4:
+                    contact_report = self.contact_state
+                    # Convert float-encoded bools (1.0/0.0) to actual bools
+                    left_contact = bool(contact_report[2] > 0.5)
+                    right_contact = bool(contact_report[3] > 0.5)
+                    grippers_in_contact = left_contact and right_contact
+                    grippers_force_above_threshold =\
+                        contact_report[0] > self.ros_parameters['force_threshold'] \
+                        and contact_report[1] > self.ros_parameters['force_threshold']
 
                 if grippers_in_contact and grippers_force_above_threshold \
                         and not self.gripper_initially_in_contact:
