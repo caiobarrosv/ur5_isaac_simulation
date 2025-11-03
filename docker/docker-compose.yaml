@@ -1,0 +1,84 @@
+x-isaacsim-build: &isaacsim-build
+  build:
+    context: ..
+    dockerfile: docker/Dockerfile.isaacsim
+
+x-isaacsim-environment: &isaacsim-environment
+  - DISPLAY=${DISPLAY:-:0}
+  - NVIDIA_VISIBLE_DEVICES=all
+  - NVIDIA_DRIVER_CAPABILITIES=all
+  - ACCEPT_EULA=Y
+  - ROS_DISTRO=humble
+  - PRIVACY_CONSENT=Y
+  - PRIVACY_USERID=admin
+  - OMNI_USER=admin
+  - OMNI_PASS=admin
+  - OMNI_SERVER="http://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5.0"
+  - LD_LIBRARY_PATH=/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib
+  - PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+  - PYTHONPATH=/workspace:/home/user/isaacsim/kit/python/lib:/home/user/isaacsim/exts/omni.isaac.core/omni/isaac/core:/opt/ros/humble/local/lib/python3.10/dist-packages
+  - XAUTHORITY=/home/user/.Xauthority
+  - QT_X11_NO_MITSHM=1
+  - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+  - ROS_DOMAIN_ID=0
+  - ROS_LOCALHOST_ONLY=0
+
+x-common-base-volumes: &common-base-volumes
+  - /tmp/.X11-unix:/tmp/.X11-unix:rw
+
+x-isaacsim-volumes: &isaacsim-volumes
+  - ../.vscode:/workspace/.vscode:rw
+  - /tmp/.X11-unix:/tmp/.X11-unix:rw
+  - ${HOME}/.Xauthority:/home/user/.Xauthority:rw
+  - ~/docker/isaac-sim/cache/kit:/home/user/isaacsim/kit/cache:rw
+  - ~/docker/isaac-sim/cache/ov:/home/user/.cache/ov:rw
+  - ~/docker/isaac-sim/cache/pip:/home/user/.cache/pip:rw
+  - ~/docker/isaac-sim/cache/warp:/home/user/.cache/warp:rw
+  - ~/docker/isaac-sim/cache/glcache:/home/user/.cache/nvidia/GLCache:rw
+  - ~/docker/isaac-sim/cache/computecache:/home/user/.nv/ComputeCache:rw
+  - ~/docker/isaac-sim/cache/asset_browser:/home/user/isaacsim/exts/isaacsim.asset.browser/cache:rw
+  - ~/docker/isaac-sim/logs:/home/user/.nvidia-omniverse/logs:rw
+  - ~/docker/isaac-sim/data:/home/user/.local/share/ov/data:rw
+  - ~/docker/isaac-sim/documents:/home/user/Documents:rw
+  - ~/docker/isaac-sim/pkg:/home/user/.local/share/ov/pkg:rw
+  - ${HOME}/.ros/log:/.ros/log
+  - /dev/shm:/dev/shm
+
+x-common-runtime: &common-runtime
+  privileged: true
+  network_mode: host
+  ipc: host
+  pid: host
+  stdin_open: true
+  tty: true
+  working_dir: /workspace
+  user: "user"
+
+x-gpu-config: &gpu-config
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: all
+            capabilities: [gpu, compute, utility, display]
+  runtime: nvidia
+
+services:
+  ur5_sim:
+    <<: [*isaacsim-build, *common-runtime, *gpu-config]
+    container_name: ur5_isaac_sim
+    environment: *isaacsim-environment
+    volumes: *isaacsim-volumes
+    entrypoint: ["/bin/bash", "-c"]
+    command: ["source /workspace/entrypoint.sh && cd /workspace/ur5_ws && /bin/bash"]
+
+  ur5_sim-dev:
+    <<: [*isaacsim-build, *common-runtime, *gpu-config]
+    container_name: ur5_isaac_sim-dev
+    environment: *isaacsim-environment
+    volumes: *isaacsim-volumes
+    entrypoint: ["/bin/bash", "-c"]
+    command: ["source /workspace/entrypoint.sh && /bin/bash"]
+
+volumes: {}

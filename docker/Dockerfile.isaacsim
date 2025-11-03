@@ -1,0 +1,288 @@
+# Isaac Sim + ROS2 Humble Container for UR5 Simulation
+FROM ubuntu:22.04
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+
+# Set environment variables for Isaac Sim
+ENV ACCEPT_EULA=Y
+ENV PRIVACY_CONSENT=Y
+
+# Fix locale settings
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+# Setup the required capabilities for the container runtime
+# Ref: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html#driver-capabilities
+ENV NVIDIA_DRIVER_CAPABILITIES=all
+
+# Configure timezone to prevent interactive prompts
+RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    # Build tools and dependencies
+    build-essential \
+    cmake \
+    pkg-config \
+    # Python dependencies
+    python3.10 \
+    python3-pip \
+    python3.10-dev \
+    # Additional dependencies
+    git \
+    udev \
+    wget \
+    unzip \
+    # Install libglu1-mesa for Iray and libxrandr2 to support Isaac Sim WebRTC streaming
+    libglu1-mesa \
+    libxrandr2 \
+    # X11 and OpenGL for GUI applications
+    libx11-dev \
+    libgl1-mesa-dev \
+    libgl1 \
+    x11-utils \
+    # OpenCV dependencies
+    libopencv-dev \
+    # Terminal emulator for Isaac Sim
+    xterm \
+    gnome-terminal \
+    # ROS2 prerequisites
+    curl \
+    gnupg \
+    lsb-release \
+    software-properties-common \
+    # Install sudo
+    sudo \
+    # Vulkan and NGX/DLSS support
+    vulkan-tools \
+    libvulkan1 \
+    libvulkan-dev \
+    vulkan-validationlayers \
+    vulkan-validationlayers-dev \
+    libnvidia-compute-525 \
+    libnvidia-gl-525 \
+    nvidia-driver-525 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create symlink for x-terminal-emulator (Isaac Sim requirement)
+RUN ln -sf /usr/bin/xterm /usr/bin/x-terminal-emulator
+
+# Configure Vulkan ICD
+RUN cat > /etc/vulkan/icd.d/nvidia_icd.json <<EOF
+{
+    "file_format_version" : "1.0.0",
+    "ICD": {
+        "library_path": "libGLX_nvidia.so.0",
+        "api_version" : "1.3.194"
+    }
+}
+EOF
+
+# Configure EGL vendor
+RUN mkdir -p /usr/share/glvnd/egl_vendor.d && \
+    cat > /usr/share/glvnd/egl_vendor.d/10_nvidia.json <<EOF
+{
+    "file_format_version" : "1.0.0",
+    "ICD" : {
+        "library_path" : "libEGL_nvidia.so.0"
+    }
+}
+EOF
+
+# Configure Vulkan implicit layers
+RUN cat > /etc/vulkan/implicit_layer.d/nvidia_layers.json <<EOF
+{
+    "file_format_version" : "1.0.0",
+    "layer": {
+        "name": "VK_LAYER_NV_optimus",
+        "type": "INSTANCE",
+        "library_path": "libGLX_nvidia.so.0",
+        "api_version" : "1.3.194",
+        "implementation_version" : "1",
+        "description" : "NVIDIA Optimus layer",
+        "functions": {
+            "vkGetInstanceProcAddr": "vk_optimusGetInstanceProcAddr",
+            "vkGetDeviceProcAddr": "vk_optimusGetDeviceProcAddr"
+        },
+        "enable_environment": {
+            "__NV_PRIME_RENDER_OFFLOAD": "1"
+        },
+        "disable_environment": {
+            "DISABLE_LAYER_NV_OPTIMUS_1": ""
+        }
+    }
+}
+EOF
+
+# Arguments for the default user
+ARG USERNAME=user
+ARG USER_UID=1000
+
+# Create a user with sudo privileges
+# Ref: https://stackoverflow.com/a/65434659
+RUN useradd -m -s /bin/bash -u $USER_UID -G sudo $USERNAME \
+    && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+USER $USERNAME
+
+# Install ROS2 Humble following official documentation
+# Set up ROS2 apt repository
+RUN sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg && \
+    sudo sh -c 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu jammy main" > /etc/apt/sources.list.d/ros2.list'
+
+# Install ROS2 Humble core packages (avoiding desktop to prevent conflicts)
+RUN sudo apt-get update && sudo apt-get install -y \
+    ros-humble-ros-core \
+    ros-humble-ros-base \
+    ros-dev-tools \
+    ros-humble-vision-msgs \
+    python3-colcon-common-extensions \
+    python3-rosdep \
+    ros-humble-demo-nodes-cpp \
+    ros-humble-demo-nodes-py \
+    && sudo rm -rf /var/lib/apt/lists/*
+
+# Install additional ROS2 packages
+RUN sudo apt-get update && sudo apt-get install -y \
+    ros-humble-rclcpp \
+    ros-humble-rclpy \
+    ros-humble-std-msgs \
+    ros-humble-rqt-image-view \
+    ros-humble-geometry-msgs \
+    ros-humble-sensor-msgs \
+    ros-humble-tf2 \
+    ros-humble-tf2-ros \
+    ros-humble-robot-state-publisher \
+    ros-humble-joint-state-publisher \
+    ros-humble-cv-bridge \
+    ros-humble-image-transport \
+    && sudo rm -rf /var/lib/apt/lists/* || true
+
+# Initialize rosdep
+RUN sudo rosdep init && rosdep update
+
+# Configure ROS2 environment in bashrc
+RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc && \
+    echo "export ROS_DOMAIN_ID=0" >> ~/.bashrc
+
+# Install Python dependencies
+RUN pip3 install --no-cache-dir \
+    numpy
+
+# Install Isaac Sim 5.1.0
+# Download and extract into a temporary directory, then move to final location
+RUN cd /home/user \
+    && echo "Downloading Isaac Sim 5.1.0 (this may take a while, ~8.2GB)..." \
+    && wget --progress=dot:giga \
+        https://download.isaacsim.omniverse.nvidia.com/isaac-sim-standalone-5.1.0-linux-x86_64.zip \
+    && echo "Extracting Isaac Sim (this will take several minutes)..." \
+    && mkdir -p /home/user/isaac_temp \
+    && unzip -q isaac-sim-standalone-5.1.0-linux-x86_64.zip -d /home/user/isaac_temp \
+    && echo "Extraction complete, checking contents..." \
+    && ls -la /home/user/isaac_temp
+
+RUN cd /home/user \
+    && echo "Moving Isaac Sim to final location..." \
+    && if [ -d "/home/user/isaac_temp" ]; then \
+        SUBDIR_COUNT=$(find /home/user/isaac_temp -maxdepth 1 -type d | wc -l); \
+        if [ "$SUBDIR_COUNT" -eq 2 ]; then \
+            EXTRACTED_DIR=$(find /home/user/isaac_temp -maxdepth 1 -type d ! -path "/home/user/isaac_temp" | head -1); \
+            echo "Found subdirectory: $EXTRACTED_DIR"; \
+            mv "$EXTRACTED_DIR" /home/user/isaacsim; \
+        else \
+            echo "Files extracted directly to isaac_temp"; \
+            mv /home/user/isaac_temp /home/user/isaacsim; \
+        fi; \
+    fi \
+    && rm -rf /home/user/isaac_temp \
+    && rm -f /home/user/isaac-sim-standalone-5.1.0-linux-x86_64.zip \
+    && echo "Running Isaac Sim post-install script..." \
+    && cd /home/user/isaacsim \
+    && ./post_install.sh \
+    && echo "Isaac Sim 5.1.0 installed successfully"
+
+# Create directory structure for volume mounts with proper permissions
+# This ensures the user can create subdirectories when Isaac Sim runs
+RUN mkdir -p /home/user/.cache /home/user/.nv /home/user/.nvidia-omniverse /home/user/.local/share/ov /home/user/Documents
+
+# Create workspace directory with proper permissions (as root, then chown)
+RUN sudo mkdir -p /workspace/ur5_ws/src && \
+    sudo chown -R user:user /workspace
+
+# Copy project files
+COPY --chown=user:user . /workspace/ur5_ws/src/ur5_isaac_simulation
+
+# Build ROS2 workspace
+WORKDIR /workspace/ur5_ws
+RUN /bin/bash -c "source /opt/ros/humble/setup.bash && \
+    colcon build --packages-select ur5_isaac_simulation && \
+    echo 'source /workspace/ur5_ws/install/setup.bash' >> ~/.bashrc"
+
+# Copy and setup the entrypoint script
+COPY --link docker/entrypoint.sh /workspace/entrypoint.sh
+RUN sudo chmod +x /workspace/entrypoint.sh
+
+ENV omni_python='/home/user/isaacsim/python.sh'
+RUN echo "alias omni_python='/home/user/isaacsim/python.sh'" >> ~/.bashrc
+
+# Debug CUDA installation and find actual locations
+RUN echo "=== CUDA Debug Info ===" && \
+    find /usr -name "nvcc" 2>/dev/null || echo "nvcc not found in /usr" && \
+    find / -name "nvcc" 2>/dev/null | head -3 || echo "nvcc not found anywhere" && \
+    find /usr -name "libcudart*" 2>/dev/null | head -5 || echo "libcudart not found" && \
+    find / -name "cuda*" -type d 2>/dev/null | head -10 || echo "no cuda directories found" && \
+    echo "======================="
+
+# Install CUDA development tools and compatible GCC version
+RUN echo "Installing CUDA toolkit and compatible GCC for compilation..." && \
+    sudo apt-get update && \
+    sudo apt-get install -y nvidia-cuda-toolkit gcc-9 g++-9 && \
+    sudo rm -rf /var/lib/apt/lists/*
+
+# Set GCC 9 as default for CUDA compatibility
+RUN sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90 --slave /usr/bin/g++ g++ /usr/bin/g++-9 && \
+    sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 80 --slave /usr/bin/g++ g++ /usr/bin/g++-11
+
+# Set CUDA environment variables after installation
+RUN CUDA_VERSION=$(ls /usr/local/ | grep cuda | head -1) && \
+    if [ -n "$CUDA_VERSION" ]; then \
+        echo "export CUDA_HOME=/usr/local/$CUDA_VERSION" >> ~/.bashrc && \
+        sudo ln -sf /usr/local/$CUDA_VERSION /usr/local/cuda; \
+    else \
+        echo "export CUDA_HOME=/usr" >> ~/.bashrc && \
+        sudo mkdir -p /usr/local/cuda/bin /usr/local/cuda/lib64 && \
+        sudo ln -sf /usr/bin/nvcc /usr/local/cuda/bin/nvcc && \
+        find /usr/lib -name "libcuda*" 2>/dev/null | head -5 | xargs -I {} sudo ln -sf {} /usr/local/cuda/lib64/ 2>/dev/null || true; \
+    fi
+
+ENV CUDA_HOME=/usr/local/cuda
+ENV PATH=$CUDA_HOME/bin:$PATH
+#ENV LD_LIBRARY_PATH=$CUDA_HOME/lib64:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
+ENV TORCH_CUDA_ARCH_LIST="7.0+PTX"
+
+# NGX/DLSS and Vulkan environment variables
+ENV __GL_THREADED_OPTIMIZATIONS=1
+ENV __GL_SHADER_DISK_CACHE=1
+ENV __GL_SHADER_DISK_CACHE_PATH=/tmp/nvidia-shader-cache
+ENV __NV_PRIME_RENDER_OFFLOAD=1
+ENV __GLX_VENDOR_LIBRARY_NAME=nvidia
+ENV VK_ICD_FILENAMES=/etc/vulkan/icd.d/nvidia_icd.json
+ENV VK_LAYER_PATH=/etc/vulkan/implicit_layer.d
+
+ENV OMNI_KIT_ALLOW_ROOT=1
+ENV RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/user/isaacsim/exts/isaacsim.ros2.bridge/humble/lib
+
+# Copy and install NVIDIA Container Toolkit
+COPY --link docker/install_x11_opengl_vulkan.sh /workspace/install_x11_opengl_vulkan.sh
+RUN sudo chmod +x /workspace/install_x11_opengl_vulkan.sh && \
+    sudo /workspace/install_x11_opengl_vulkan.sh
+
+# Set working directory
+WORKDIR /workspace
+
+# Reset entrypoint and command
+ENTRYPOINT []
+CMD ["/bin/bash"]
